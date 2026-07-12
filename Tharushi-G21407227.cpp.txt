@@ -1,0 +1,715 @@
+﻿/*
+ * ============================================================
+ *  Bike Rental System
+ *  A console-based bike hire booking application
+ *
+ *  Author               : [Tharushi Liyanage]
+ *  ID Number            : [G21407227]
+ *  Module               : [CO1409]
+ *  Date                 : [10.05.2026]
+ *  Expected Grade Band  : [74-100]
+ *
+ *  Description:
+ *    Allows customers to add credits, build a booking by
+ *    selecting one or more bikes, a rental duration, and
+ *    optional accessories, then checkout and view booking
+ *    history - all within a validated menu-driven interface.
+ * ============================================================
+ */
+
+#include <iostream>  // Provides input/output functionality
+#include <iomanip>   // Fixed / setprecision for currency formatting
+#include <vector>    // Dynamic lists for bikes, accessories, history (A dynamic array that can grow or shrink in size)
+#include <string>    // Allow the users to handle text
+//Each line tells the compiler to bring in a specific library so the program can use its features. 
+
+using namespace std;
+//  CONSTANTS  -  eliminates all magic numbers from the program
+
+// Bike base costs (credits) (These represent the base rental cost (in credits) for different types of bikes)
+const double BIKE_STANDARD = 5.00;
+const double BIKE_MOUNTAIN = 8.50;
+const double BIKE_ELECTRIC = 12.00;
+
+// Rental duration costs (credits) (These are additional costs depending on how long the bike is rented)
+const double DURATION_1HR = 2.00;
+const double DURATION_HALF_DAY = 6.00;
+const double DURATION_FULL_DAY = 10.00;
+const double DURATION_WEEKEND = 18.00;
+
+// Accessory costs (credits) (These represent the extra charges for renting accessories)
+const double ACC_HELMET = 1.50;
+const double ACC_LOCK = 1.00;
+const double ACC_CAMERA_MNT = 2.00;
+const double ACC_CHILD_SEAT = 3.50;
+const double ACC_REPAIR_KIT = 4.00;
+const double ACC_GOPRO = 10.00;
+
+// Menu sizes used in range validation (These constants define the number of options available in each menu)
+const int NUM_BIKE_TYPES = 3;
+const int NUM_DURATIONS = 4;
+const int NUM_ACCESSORIES = 6;
+const int NUM_MAIN_MENU = 4;
+
+// DATA STRUCTURES - It is used to group related variables together under one name
+
+// Represents a single bike chosen by the customer.
+// Stored in a vector so multiple bikes can be added per booking.
+ 
+struct BikeSelection
+{
+    string typeName; // the name of the bike (e.g. "Standard")
+    double typeCost; // base cost of that bike type
+};
+
+// Represents a single accessory added to a booking.
+// Stored in a vector so multiple accessories can be added.
+
+struct AccessorySelection
+{
+    string name;
+    double cost;
+};
+
+// A complete, confirmed booking stored in session history.
+// Using a struct groups all related data together cleanly, avoiding a long flat list of variables (good practice).
+ 
+struct Booking
+{
+    vector<BikeSelection> bikes; // List of all bikes rented
+    string durationName; // The rental duration chosen (e.g., "Full Day") (A customer can only pick one rental duration)
+    double durationCost; // The cost associated with that duration
+    vector<AccessorySelection> accessories; // A list of all accessories rented
+    double totalCost; // The final calculated cost of the booking (bikes + duration + accessories)
+};
+
+// FORWARD DECLARATIONS - It allows you to declare the function’s signature (its name, return type, and parameters)
+// Forward declarations are used so we can declare all the functions at the top of the file, making the code easier to read and organize.
+
+// We use vectors for bikes and accessories because customers can choose multiple items, while duration and cost are single values.
+void printDivider(); // Prints a simple divider line for neat console formatting
+void printBanner(); // Displays the program banner or welcome message at the start of execution
+int  getValidInt(const string& prompt, int minVal, int maxVal); // Prompts the user for an integer input, validates it, and ensures it falls within [minVal, maxVal]
+double getValidPositiveDouble(const string& prompt); // Prompts the user for a positive decimal number and validates the input
+void printPrice(double price); // Prints a price value formatted as currency (e.g., 5.00 credits)
+void addCredits(double& creditBalance); // Adds credits to the user's balance; uses reference so the actual balance variable is updated
+
+// Select Bike
+BikeSelection selectBike(); // Lets the user select a single bike type and returns its details as a BikeSelection struct
+void selectBikes(vector<BikeSelection>& bikes); // Allows the user to select multiple bikes; stores them in the provided vector
+
+// Select Duration 
+void selectDuration(string& durationName, double& durationCost);  // Lets the user choose a rental duration; updates both the name and cost variables
+
+// Select an Accessory
+AccessorySelection buildAccessory(int choice); // Builds an AccessorySelection struct based on the user's menu choice
+void selectAccessories(vector<AccessorySelection>& accessories); // Allows the user to select multiple accessories; stores them in the provided vector
+
+// Calculate Total 
+double calculateTotal(const vector<BikeSelection>& bikes, // Calculates the total booking cost by adding up prices of bikes, duration, and accessories
+    double durationCost,
+    const vector<AccessorySelection>& accessories);
+
+// Booking Summary 
+void printBookingSummary(const vector<BikeSelection>& bikes, // Prints a detailed summary of the booking: bikes, duration, accessories, and total
+    const string& durationName,
+    double durationCost,
+    const vector<AccessorySelection>& accessories,
+    double total);
+
+// Booking Checkout
+Booking checkout(const vector<BikeSelection>& bikes, // Finalizes the booking: deducts credits, creates a Booking struct, and returns it
+    const string& durationName,
+    double durationCost,
+    const vector<AccessorySelection>& accessories,
+    double& creditBalance);
+
+void showRecentBookings(const vector<Booking>& bookingHistory); // Displays a list of recent bookings stored in the booking history
+void createBooking(double& creditBalance, vector<Booking>& bookingHistory); // Manages the entire booking process: bike selection, duration, accessories, checkout, and history update
+int showMainMenu(double creditBalance); // Shows the main menu options to the user and returns their choice as an integer
+
+// UTILITY / HELPER FUNCTIONS
+
+// Prints a horizontal divider so menus are visually separated.
+// Extracted into its own function to avoid repeating the same
+void printDivider()
+{
+    cout << "--------------------------------------------" << endl;
+}
+// Prints the application banner shown once at startup.
+void printBanner()
+{
+    cout << "         Bike Rental System        " << endl;
+}
+
+/*
+ * FUNCTION: getValidInt
+ * Reads an integer from the user and makes sure it is valid.
+ * The number must be between [minVal, maxVal].
+ * It Shows a prompt message to the user.
+ */
+int getValidInt(const string& prompt, int minVal, int maxVal)
+{
+    int value; // stores the user’s input
+
+    while (true) // repeat until valid input is given
+    {
+        cout << prompt; // show the prompt message
+        cin >> value; // read input into 'value'
+
+        if (cin.fail()) // case 1: user typed non-numeric input
+        {
+            cin.clear(); // reset input stream
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard bad input
+            cout << "[!] Invalid input - please enter a whole number between "
+                << minVal << " and " << maxVal << "." << endl;
+        }
+        else if (value < minVal || value > maxVal) // case 2: number out of range
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            cout << "[!] Choice out of range - please enter a number between "
+                << minVal << " and " << maxVal << "." << endl;
+        }
+        else // case 3: valid input
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            return value; // return the valid number
+        }
+    }
+}
+
+/*
+ * FUNCTION: getValidPositiveDouble
+ * Reads a decimal number (double) from the user and makes sure it is valid.
+ * The number must be greater than zero (positive).
+ */
+double getValidPositiveDouble(const string& prompt)
+{
+    double value; // variable to store the user’s input
+
+    while (true) // keep asking until valid input is given
+    {
+        cout << prompt; // show the prompt message
+        cin >> value; // read input into 'value'
+
+        if (cin.fail()) // CASE 1: user typed non-numeric input (e.g., "abc")
+        {
+            cin.clear(); // reset the input stream state
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // discard leftover input
+            cout << "[!] Invalid input - please enter a positive number." << endl;
+        }
+        else if (value <= 0.0) // CASE 2: user entered zero or a negative number
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            cout << "[!] Amount must be greater than zero." << endl;
+        }
+        else // CASE 3: input is valid (numeric and greater than zero)
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            return value; // return the valid positive number
+        }
+    }
+}
+
+/*
+ * FUNCTION: printPrice
+ * Outputs a price value formatted to exactly two decimal places.
+ * Example: if price = 5, it will display as 5.00.
+ */
+void printPrice(double price)
+{
+    // 'fixed' ensures the number is shown in standard decimal format (not scientific notation).
+    // 'setprecision(2)' forces exactly two digits after the decimal point.
+    cout << fixed << setprecision(2) << price;
+}
+
+// MANAGING CREDITS
+
+/*
+ * FUNCTION: addCredits
+ * Allows the user to top up their credit balance.
+ */
+void addCredits(double& creditBalance)
+{
+    printDivider(); 
+    cout << "  ADD CREDITS" << endl; // Show section title
+    printDivider();
+    cout << "  Current balance: "; // Display the current balance before adding credits 
+    printPrice(creditBalance); // Formatted to 2 decimal places
+    cout << " credits" << endl;
+
+    // Ask the user how much to add (must be positive)
+    double amount = getValidPositiveDouble("  Enter amount to add: ");
+    creditBalance += amount; // Increase the balance by the entered amount
+
+    // Display the new balance after adding credits
+    cout << "  New balance: ";
+    printPrice(creditBalance);
+    cout << " credits" << endl;
+}
+
+// BIKE SELECTION
+/*
+ * FUNCTION: selectBike
+ * Shows the bike type menu and lets the user choose one.
+ * Returns a BikeSelection struct with the chosen bike’s name and cost.
+ */
+BikeSelection selectBike()
+{
+    cout << endl; 
+    printDivider(); 
+    cout << "  SELECT BIKE TYPE" << endl; // Section title
+    printDivider();
+    // Display menu options with names and prices 
+    cout << "  1. Standard   -  5.00 credits" << endl;
+    cout << "  2. Mountain   -  8.50 credits" << endl;
+    cout << "  3. Electric   - 12.00 credits" << endl;
+    printDivider();
+
+    // Ask user for choice (validated between 1 and NUM_BIKE_TYPES)
+    int choice = getValidInt("  Your choice (1-3): ", 1, NUM_BIKE_TYPES);
+
+    BikeSelection bike; // struct to hold chosen bike details
+
+    // Assign name and cost based on the validated choice
+    switch (choice)
+    {
+    case 1:
+        bike.typeName = "Standard";
+        bike.typeCost = BIKE_STANDARD;
+        break;
+
+    case 2:
+        bike.typeName = "Mountain";
+        bike.typeCost = BIKE_MOUNTAIN;
+        break;
+
+    case 3:
+        bike.typeName = "Electric";
+        bike.typeCost = BIKE_ELECTRIC;
+        break;
+    }
+    // Confirm to the user what was added
+    cout << "  Added: " << bike.typeName << " bike." << endl;
+    return bike; // return the populated struct
+}
+
+// FUNTION: selectBikes
+// Builds the list of bikes for a booking by repeatedly calling selectBike().
+void selectBikes(vector<BikeSelection>& bikes)
+{
+    bikes.clear();   // ensure we start fresh for a new booking
+
+    // First bike is mandatory
+    bikes.push_back(selectBike());
+
+    // Offer additional bikes in a loop
+    while (true)
+    {
+        cout << endl;
+        // Ask if user wants another bike
+        int again = getValidInt("  Add another bike? (1 = Yes, 2 = No): ", 1, 2);
+
+        if (again == 2) // if No, stop loop
+            break;
+
+        // If Yes, add another bike
+        bikes.push_back(selectBike());
+    }
+}
+
+// DURATION SELECTION
+
+// FUNCTION: selectDuration
+// It Displays rental duration menu, lets user choose an option, and sets both durationName and durationCost using references.
+void selectDuration(string& durationName, double& durationCost)
+{
+    cout << endl;
+    printDivider();
+    cout << "  SELECT RENTAL DURATION" << endl; // Display the menu title
+    printDivider();
+    // Show all available rental duration options with their costs
+    cout << "  1. 1 Hour       -  2.00 credits" << endl;
+    cout << "  2. Half Day     -  6.00 credits" << endl;
+    cout << "  3. Full Day     - 10.00 credits" << endl;
+    cout << "  4. Weekend      - 18.00 credits" << endl;
+    printDivider();
+    // Ask user for input, ensuring it is between 1 and NUM_DURATIONS (1–4)
+    int choice = getValidInt("  Your choice (1-4): ", 1, NUM_DURATIONS);
+    // Decide which option was chosen and set both name and cost
+    switch (choice)
+    {
+    case 1:
+        durationName = "1 Hour";    
+        durationCost = DURATION_1HR;    
+        break;
+    case 2:
+        durationName = "Half Day";
+        durationCost = DURATION_HALF_DAY;
+        break;
+    case 3:
+        durationName = "Full Day";
+        durationCost = DURATION_FULL_DAY;
+        break;
+    case 4:
+        durationName = "Weekend";
+        durationCost = DURATION_WEEKEND;
+        break;
+    }
+
+    cout << "  Selected: " << durationName << "." << endl; // Confirm the user’s selection by printing it back
+}
+
+// ACCESSORY SELECTION
+
+// FUNCTION: buildAccessory
+// Maps a validated menu choice (number) to an AccessorySelection struct.
+// Keeps logic separate from the selection loop, Returns a small struct by value.
+AccessorySelection buildAccessory(int choice)
+{
+    // Create a new AccessorySelection struct instance to hold the chosen accessory
+    AccessorySelection acc;
+
+    switch (choice) // Decide which accessory corresponds to the user's choice
+    {
+    case 1:
+        acc.name = "Helmet";         
+        acc.cost = ACC_HELMET;     
+        break;
+    case 2:
+        acc.name = "Lock";
+        acc.cost = ACC_LOCK;
+        break;
+    case 3:
+        acc.name = "Camera Mount";
+        acc.cost = ACC_CAMERA_MNT;
+        break;
+    case 4:
+        acc.name = "Child Seat";
+        acc.cost = ACC_CHILD_SEAT;
+        break;
+    case 5:
+        acc.name = "Repair Kit";
+        acc.cost = ACC_REPAIR_KIT;
+        break;
+    case 6:
+        acc.name = "GoPro Camera";
+        acc.cost = ACC_GOPRO;
+        break;
+    }
+    return acc; // Return the filled AccessorySelection struct back to the caller
+}
+
+// FUNCTION: selectAccessories
+// Presents the accessories menu and allows the user to add multiple items.
+// User can enter 0 at any time to finish (or immediately to skip).
+void selectAccessories(vector<AccessorySelection>& accessories)
+{
+    accessories.clear(); // Start fresh: remove any previous accessories from the vector
+
+    cout << endl; 
+    printDivider();
+    cout << "  ACCESSORIES  (enter 0 when done)" << endl; // Display the menu title with instructions
+    printDivider();
+    // Show all available accessory options with their costs
+    cout << "  0. No accessories / Done" << endl;
+    cout << "  1. Helmet        -  1.50 credits" << endl;
+    cout << "  2. Lock          -  1.00 credits" << endl;
+    cout << "  3. Camera Mount  -  2.00 credits" << endl;
+    cout << "  4. Child Seat    -  3.50 credits" << endl;
+    cout << "  5. Repair Kit    -  4.00 credits" << endl;
+    cout << "  6. GoPro Camera  - 10.00 credits" << endl;
+    printDivider();
+
+    while (true) // Loop until the user chooses to finish
+    {
+        // Ask user for input, ensuring it is between 0 and NUM_ACCESSORIES (0–6)
+        int choice = getValidInt("  Add accessory (0 to finish): ", 0, NUM_ACCESSORIES);
+
+        if (choice == 0) // If user enters 0, exit the loop (done selecting)
+            break;
+
+        AccessorySelection acc = buildAccessory(choice); // Convert the numeric choice into an AccessorySelection struct
+        accessories.push_back(acc); // Convert the numeric choice into an AccessorySelection struct
+        cout << "  Added: " << acc.name << "." << endl; // Confirm to the user which accessory was added
+    }
+}
+
+// COST CALCULATION 
+
+// FUNCTION: calculateTotal
+// Purpose: Adds up the costs of all bikes, the chosen rental duration, and any accessories to produce the final booking total.
+double calculateTotal(
+    const vector<BikeSelection>& bikes,  // List of bikes chosen (read-only, passed by const reference)
+    double durationCost, // Cost of the rental duration (single value)
+    const vector<AccessorySelection>& accessories) // List of accessories chosen (read-only, passed by const reference)
+{
+    // Start with a running total of 0.0 credits
+    double total = 0.0;
+
+    // Loop through each bike in the vector
+    for (const BikeSelection& b : bikes)
+        total += b.typeCost; // Add the cost of each bike to the running total
+
+    total += durationCost; // Add the rental duration cost once (shared across all bikes)
+
+    // Loop through each accessory in the vector
+    for (const AccessorySelection& a : accessories)
+        total += a.cost; // Add the cost of each accessory to the running total
+
+    return total; // Return the final computed total as a double
+}
+
+// BOOKING SUMMARY
+
+// FUNCTION: printBookingSummary
+// Prints a formatted summary of the current booking before checkout. (Shows all bikes, duration, accessories, and the total cost)
+void printBookingSummary(
+    const vector<BikeSelection>& bikes, // List of bikes chosen (read-only)
+    const string& durationName, // Name of rental duration (read-only)
+    double durationCost, // Cost of rental duration
+    const vector<AccessorySelection>& accessories, // List of accessories chosen (read-only)
+    double total) // Final total cost of booking
+{
+    cout << endl;
+    printDivider();
+    cout << "  BOOKING SUMMARY" << endl; // Display section title
+    printDivider();
+
+    cout << "  Bikes:" << endl; // Heading for bikes section
+    for (const BikeSelection& b : bikes) 
+    {
+        cout << "    - " << b.typeName << "   "; // Print bike name
+        printPrice(b.typeCost); // Print bike cost formatted to 2 decimal places
+        cout << " credits" << endl; // Label the unit as credits
+    }
+
+    cout << "  Duration: " << durationName << "   ";
+    printPrice(durationCost); 
+    cout << " credits" << endl; 
+
+    if (!accessories.empty()) // Check if any accessories were chosen
+    {
+        cout << "  Accessories:" << endl; 
+        for (const AccessorySelection& a : accessories) // Loop through each accessory
+        {
+            cout << "    - " << a.name << "   "; 
+            printPrice(a.cost); 
+            cout << " credits" << endl; 
+        }
+    }
+    else
+    {
+        cout << "  Accessories: None" << endl; // If no accessories, print "None"
+    }
+
+    printDivider();
+    cout << "  TOTAL: "; // Heading for total cost
+    printPrice(total);
+    cout << " credits" << endl; 
+    printDivider();
+}
+
+// CHECKOUT
+
+// FUNCTION: checkout
+// Handles the full checkout process for a booking.
+// Ensures the user has enough credits, deducts the total cost, confirms the booking, and returns a completed Booking struct.
+Booking checkout(
+    const vector<BikeSelection>& bikes, 
+    const string& durationName, 
+    double durationCost, 
+    const vector<AccessorySelection>& accessories, 
+    double& creditBalance) 
+{
+    double total = calculateTotal(bikes, durationCost, accessories); // Step 1: Calculate the total cost of the booking
+    printBookingSummary(bikes, durationName, durationCost, accessories, total); // Step 2: Show the booking summary
+    // Step 3: Check if the user has enough credits (If not, keep prompting them to add credits until balance >= total)
+    while (creditBalance < total)
+    {
+        cout << endl;
+        cout << "  [!] Insufficient credits. You need ";
+        printPrice(total - creditBalance); // Show how many more credits are required
+        cout << " more credits." << endl;
+        cout << "  Please top up to continue." << endl;
+
+        addCredits(creditBalance); // Let the user add credits
+    }
+    // Step 4: Deduct the total cost from the user’s balance    
+    creditBalance -= total;
+    // Step 5: Confirm booking to the user
+    cout << endl;
+    cout << "  Booking confirmed! Thank you." << endl;
+    cout << "  Remaining balance: ";
+    printPrice(creditBalance);
+    cout << " credits" << endl;
+    // Step 6: Build a Booking struct with all details    
+    Booking newBooking;
+    newBooking.bikes = bikes; 
+    newBooking.durationName = durationName; 
+    newBooking.durationCost = durationCost; 
+    newBooking.accessories = accessories;
+    newBooking.totalCost = total; 
+    return newBooking; // Step 7: Return the completed booking record
+}
+
+// RECENT BOOKINGS
+
+// FUNCTION: showRecentBookings
+// It displays all bookings made during the current session.
+// bookingHistory is passed as a const reference to avoid copying potentially large vectors and to ensure we don’t modify them.
+
+void showRecentBookings(const vector<Booking>& bookingHistory)
+{
+    cout << endl;
+    printDivider();
+    cout << "  RECENT BOOKINGS" << endl;
+    printDivider();
+
+    // If no bookings exist, show a message and exit
+    if (bookingHistory.empty())
+    {
+        cout << "  No bookings have been made yet." << endl;
+        return;
+    }
+
+    // Loop through each booking using an index (so we can label them #1, #2, etc.)
+    for (size_t i = 0; i < bookingHistory.size(); i++)
+    {
+        const Booking& b = bookingHistory[i]; // Get the current booking by reference (read-only)
+
+        // Print booking number (index + 1 for human-friendly numbering)
+        cout << endl;
+        cout << "  Booking #" << (i + 1) << endl;
+
+        cout << "  Bikes:" << endl; // Heading for bikes section
+        for (const BikeSelection& bike : b.bikes) // Loop through all bikes in this booking
+        {
+            cout << "    - " << bike.typeName << "   "; 
+            printPrice(bike.typeCost); 
+            cout << " credits" << endl; 
+        }
+
+        cout << "  Duration: " << b.durationName << "   "; 
+        printPrice(b.durationCost);         
+        cout << " credits" << endl; 
+
+        if (!b.accessories.empty()) // Check if any accessories were chosen
+        {
+            cout << "  Accessories:" << endl; 
+            for (const AccessorySelection& acc : b.accessories)
+            {
+                cout << "    - " << acc.name << "   "; 
+                printPrice(acc.cost); 
+                cout << " credits" << endl;
+            }
+        }
+        else
+        {
+            cout << "  Accessories: None" << endl; 
+        }
+        cout << "  Total: ";
+        printPrice(b.totalCost); 
+        cout << " credits" << endl;
+        printDivider();
+    }
+}
+
+// CREATE BOOKING - Coordinates the full booking workflow (bikes → duration → accessories → checkout) and saves the completed booking to history.
+
+// FUNCTION: createBooking
+// creditBalance: must reflect deductions after checkout
+// bookingHistory: completed booking is appended here
+void createBooking(double& creditBalance, vector<Booking>& bookingHistory)
+{
+    // Step 1 - choose one or more bikes
+    vector<BikeSelection> bikes; // Temporary vector to hold selected bikes
+    selectBikes(bikes); // Call function to let user pick bikes
+
+    // Step 2 - choose rental duration (shared across all bikes)
+    string durationName; // Variable to store chosen duration name
+    double durationCost = 0.0; // Variable to store chosen duration cost
+    selectDuration(durationName, durationCost); // Call function to set both values
+
+    // Step 3 - optionally add accessories
+    vector<AccessorySelection> accessories; // Temporary vector to hold accessories
+    selectAccessories(accessories); // Call function to let user pick accessories
+
+    // Step 4 - confirm and pay (handles insufficient credits internally)
+    Booking completed = checkout(bikes, durationName, durationCost, accessories, creditBalance); // Perform checkout, deduct credits, return booking
+    bookingHistory.push_back(completed); // Append completed booking to history vector
+    cout << endl;
+    cout << "  Returning to main menu...." << endl; // Inform user workflow is complete
+}
+
+// MAIN MENU
+
+// FUNCTION: showMainMenu
+// It displays the main menu and returns the user's validated choice.
+// creditBalance is passed by value because we only display it here, not modify it.
+int showMainMenu(double creditBalance)
+{
+    cout << endl;
+    printDivider();
+    cout << "  MAIN MENU" << endl; // Display the menu title
+    printDivider();
+    cout << "  Balance: "; // Display the balance
+    printPrice(creditBalance);
+    cout << " credits" << endl;
+    printDivider();
+    // Show all available menu options
+    cout << "  1. Add Credits" << endl; // Option 1: Add more credits to balance
+    cout << "  2. Create Booking" << endl; // Option 2: Start a new booking workflow
+    cout << "  3. Recent Bookings" << endl; // Option 3: View booking history
+    cout << "  4. Exit" << endl; // Option 4: Exit the program
+    printDivider();
+    // Ask user for input, ensuring it is between 1 and NUM_MAIN_MENU (1–4)
+    return getValidInt("  Your choice (1-4): ", 1, NUM_MAIN_MENU);
+}
+
+// MAIN 
+
+// FUNCTION: main
+// Entry point of the program. Owns all top-level state (credits and booking history) and drives the main application loop until the user chooses to exit.
+int main()
+{
+    printBanner(); // Show the application banner at startup
+
+    double creditBalance = 0.0; // Variable to track the user's credit balance (starts at 0)
+    vector<Booking> bookingHistory; // Vector to store all bookings made during the session
+
+    // Ask for an initial credit deposit before showing the menu
+    cout << endl;
+    cout << "  Welcome to Bike Rental System! Please add some credits to get started." << endl;
+    addCredits(creditBalance); // Prompt user to add credits (must be positive)
+
+    // Main application loop - runs until the user chooses Exit
+    bool running = true; // true = keep running
+
+    while (running) // Loop continues until running is set to false
+    {
+        int choice = showMainMenu(creditBalance); // Display main menu and get validated user choice (1–4)
+
+        switch (choice) // Decide action based on user’s choice
+        {
+        case 1:
+            addCredits(creditBalance); // Option 1: Add more credits
+            break;
+
+        case 2:
+            createBooking(creditBalance, bookingHistory); // Option 2: Start booking workflow (bikes → duration → accessories → checkout)
+            break;
+
+        case 3:
+            showRecentBookings(bookingHistory); // Option 3: Display all bookings made so far
+            break;
+
+        case 4:
+            cout << endl;
+            cout << "  Thank you for using our service. Goodbye!" << endl;
+            running = false; // Option 4: Exit program by setting loop flag to false
+            break;
+        }
+    }
+    return 0; // End of program, return 0 to signal successful execution
+} 
