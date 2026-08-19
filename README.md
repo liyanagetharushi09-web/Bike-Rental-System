@@ -1,10 +1,9 @@
 # Bike Rental System 
 
 ## Description
-Bike Rental System is a console-based application developed in C++ for the CO1409 Programming module (Academic Year 2025-26).  
+Bike Rental System is a console-based application developed in C++ for the CO1409 Programming module.  
 It allows customers to manage credits, build bookings by selecting bikes, rental durations, and optional accessories, then checkout and view booking history.  
 The program is menu-driven, fully validated, and demonstrates structured programming concepts, use of constants, arrays/vectors, functions, and clean code practices.  
-This implementation is designed to achieve a grade band of 74–100.
 
 ## Features
 - 💳 **Credit Management**: Add and maintain a balance of credits.
