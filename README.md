@@ -6,7 +6,7 @@ The application implements a logistics driver payroll system that reads driver i
 It demonstrates the use of core programming concepts such as file handling, data structures, functions, input validation, and error handling.  
 The implementation has been completed up to the 70+ grade band requirements.
 
-## Features (Implemented up to 70+)
+## Features 
 - 📂 Reads driver details from `drivers.txt` (ID, name, rate per mile).
 - 🧮 Calculates monthly pay based on miles driven and rate per mile.
 - 💰 Income tax calculation (20% above £12,570 annual threshold).
@@ -46,12 +46,6 @@ The implementation has been completed up to the 70+ grade band requirements.
   - Monthly Pay (after tax)
 - Results are written to output files.
 - Errors are logged in `errors.txt`.
-
-## Assessment Notes
-- Developed individually as per coursework requirements.
-- Demonstration required in lab sessions.
-- Code is well-indented, commented, and readable.
-- Academic integrity policies strictly apply.
 
 --------------------------------
 Developed for CO1409 Programming Coursework (Payroll System)  
