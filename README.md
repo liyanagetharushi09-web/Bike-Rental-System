@@ -1,52 +1,55 @@
-# Payroll System 
+# Bike Rental System 
 
 ## Description
-This project is a C++ program developed for the CO1409 Programming module at the University of Lancashire (Academic Year 2025-26).  
-The application implements a logistics driver payroll system that reads driver information from files, calculates wages, applies tax deductions, and outputs results.  
-It demonstrates the use of core programming concepts such as file handling, data structures, functions, input validation, and error handling.  
-The implementation has been completed up to the 70+ grade band requirements.
+Bike Rental System is a console-based application developed in C++ for the CO1409 Programming module (Academic Year 2025-26).  
+It allows customers to manage credits, build bookings by selecting bikes, rental durations, and optional accessories, then checkout and view booking history.  
+The program is menu-driven, fully validated, and demonstrates structured programming concepts, use of constants, arrays/vectors, functions, and clean code practices.  
+This implementation is designed to achieve a grade band of 74–100.
 
-## Features 
-- 📂 Reads driver details from `drivers.txt` (ID, name, rate per mile).
-- 🧮 Calculates monthly pay based on miles driven and rate per mile.
-- 💰 Income tax calculation (20% above £12,570 annual threshold).
-- 📊 Outputs pay before and after tax deductions.
-- 📝 Handles multiple pay files (`jan26.txt`, `feb26.txt`, `mar26.txt`).
-- ⚠️ Error handling for invalid/missing driver IDs and incomplete records (logged in `errors.txt`).
-- 🔄 Continuous file processing until user quits.
-- 🧑‍💻 Allows user to input the name of a pay file to process.
-- ❌ Displays error messages if a file cannot be found.
-- 🗂 Skips incomplete records without modifying driver data.
-- 📝 Logs issues (invalid IDs, incomplete entries) into a single `errors.txt` file.
-- 🔍 Option to search for a particular driver or view all driver records.
-- 📑 Outputs results to files (e.g., `jan26_output.txt`).
+## Features
+- 💳 **Credit Management**: Add and maintain a balance of credits.
+- 🚲 **Bike Selection**: Choose one or more bikes (Standard, Mountain, Electric).
+- ⏱️ **Rental Duration**: Options include 1 Hour, Half Day, Full Day, Weekend.
+- 🎒 **Accessories**: Optional add-ons such as Helmet, Lock, Camera Mount, Child Seat, Repair Kit, GoPro.
+- 🧮 **Cost Calculation**: Computes total cost (bikes + duration + accessories).
+- 📑 **Booking Summary**: Displays a detailed breakdown before checkout.
+- ✅ **Checkout**: Validates credit balance, deducts cost, confirms booking.
+- 📜 **Booking History**: Stores and displays all bookings made during the session.
+- 🖥️ **Menu Interface**: Simple, validated menu with options to add credits, create bookings, view history, or exit.
 
 ## System Requirements
 - Language: C++
-- Compiler: Any standard C++ compiler (e.g., g++, Visual Studio)
-- Input files: drivers.txt, jan26.txt, feb26.txt, mar26.txt, apr26.txt
-- Output files: jan26_output.txt, errors.txt
 
 ## Usage
-1. Place all input files in the project folder.
-2. Compile the program using your C++ compiler.
-3. Run the executable.
-4. Follow prompts to:
-   - Enter the name of a pay file (e.g., jan26.txt).
-   - Process multiple files in sequence until typing "quit".
-   - View driver details and pay summaries.
-   - Handle errors gracefully with logs.
+1. Follow the menu prompts:
+- Add credits to start.
+- Create bookings by selecting bikes, duration, and accessories.
+- Checkout and confirm bookings.
+- View booking history at any time.
+- Exit when finished.
 
 ## Example Workflow
-- Program reads driver details from `drivers.txt`.
-- User specifies a pay file (e.g., `jan26.txt`).
-- Pay is calculated and displayed:
-  - Driver ID, Name, Rate per Mile, Miles Driven
-  - Monthly Pay (before tax)
-  - Monthly Pay (after tax)
-- Results are written to output files.
-- Errors are logged in `errors.txt`.
+- User adds 20 credits.
+- Selects 1 Mountain bike and 1 Electric bike.
+- Chooses "Full Day" rental.
+- Adds Helmet and Lock accessories.
+- Program calculates total, validates credits, deducts cost, and confirms booking.
+- Booking is stored in history and can be viewed later.
+
+## Code Highlights
+- **Constants**: All prices and menu sizes defined as constants (no magic numbers).
+- **Structs**: Used for BikeSelection, AccessorySelection, and Booking to group related data.
+- **Vectors**: Dynamic lists for bikes, accessories, and booking history.
+- **Functions**: Modular design for input validation, selection, calculation, checkout, and history display.
+- **Validation**: Ensures user inputs are numeric, within range, and positive where required.
+- **Formatting**: Prices displayed with two decimal places for clarity.
+
+## Assessment Notes
+- Developed individually as per coursework requirements.
+- Code is properly indented, commented, and uses meaningful variable names.
+- Demonstration required in lab sessions.
+- Academic integrity policies strictly apply.
 
 --------------------------------
-Developed for CO1409 Programming Coursework (Payroll System)  
+Developed for CO1409 Programming Coursework (Bike Rental System)  
 University of Lancashire, Academic Year 2025-26
